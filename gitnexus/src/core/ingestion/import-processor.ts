@@ -470,7 +470,7 @@ export const processImports = async (
                 normalizedFileList,
                 resolveCache,
                 language,
-                tsconfigPaths,
+                configs.tsconfigPaths,
                 index,
               );
               if (resolvedPath) {

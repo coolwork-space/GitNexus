@@ -2,12 +2,13 @@ import { KnowledgeGraph } from '../graph/types.js';
 import { ASTCache } from './ast-cache.js';
 import type { SymbolDefinition, SymbolTable } from './symbol-table.js';
 import { ImportMap, PackageMap, NamedImportMap, isFileInPackageDir } from './import-processor.js';
-import { resolveSymbol, resolveSymbolInternal } from './symbol-resolver.js';
+import { resolveSymbolInternal } from './symbol-resolver.js';
 import { walkBindingChain } from './named-binding-extraction.js';
 import Parser from 'tree-sitter';
 import { isLanguageAvailable, loadParser, loadLanguage } from '../tree-sitter/parser-loader.js';
 import { LANGUAGE_QUERIES } from './tree-sitter-queries.js';
 import { generateId } from '../../lib/utils.js';
+import { SupportedLanguages } from '../../config/supported-languages.js';
 import {
   getLanguageFromFilename,
   isVerboseIngestionEnabled,
@@ -133,7 +134,7 @@ export const processCalls = async (
       const calledName = nameNode.text;
 
       // Ruby: route special calls to heritage or properties (imports handled by import-processor)
-      if (language === 'ruby') {
+      if (language === SupportedLanguages.Ruby) {
         const callNode = captureMap['call'];
 
         // require/require_relative → already handled by import-processor, skip
@@ -186,7 +187,7 @@ export const processCalls = async (
                 properties: {
                   name: propName, filePath: file.path,
                   startLine: arg.startPosition.row, endLine: arg.endPosition.row,
-                  language: 'ruby', isExported: true,
+                  language: SupportedLanguages.Ruby, isExported: true,
                 },
               });
               symbolTable.add(file.path, propName, nodeId, 'Property');
