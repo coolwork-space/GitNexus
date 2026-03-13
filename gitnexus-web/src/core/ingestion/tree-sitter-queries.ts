@@ -428,7 +428,7 @@ export const RUBY_QUERIES = `
 (class
   name: (constant) @heritage.class
   superclass: (superclass
-    (constant) @heritage.extends)) @heritage
+    (constant) @heritage.extends)) @heritage`;
     
 // Swift queries - works with tree-sitter-swift
 export const SWIFT_QUERIES = `
