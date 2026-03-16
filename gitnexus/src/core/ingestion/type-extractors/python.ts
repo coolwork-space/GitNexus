@@ -344,6 +344,7 @@ const PATTERN_BINDING_NODE_TYPES: ReadonlySet<string> = new Set(['as_pattern']);
 export const typeConfig: LanguageTypeConfig = {
   declarationNodeTypes: DECLARATION_NODE_TYPES,
   forLoopNodeTypes: FOR_LOOP_NODE_TYPES,
+  patternBindingNodeTypes: PATTERN_BINDING_NODE_TYPES,
   extractDeclaration,
   extractParameter,
   extractInitializer,
@@ -351,5 +352,4 @@ export const typeConfig: LanguageTypeConfig = {
   extractForLoopBinding,
   extractPendingAssignment,
   extractPatternBinding,
-  patternBindingNodeTypes: PATTERN_BINDING_NODE_TYPES,
 };

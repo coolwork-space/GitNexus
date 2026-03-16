@@ -143,15 +143,15 @@ const extractJavaPatternBinding: PatternBindingExtractor = (node) => {
 
 export const javaTypeConfig: LanguageTypeConfig = {
   declarationNodeTypes: JAVA_DECLARATION_NODE_TYPES,
+  forLoopNodeTypes: JAVA_FOR_LOOP_NODE_TYPES,
+  patternBindingNodeTypes: new Set(['instanceof_expression']),
   extractDeclaration: extractJavaDeclaration,
   extractParameter: extractJavaParameter,
   extractInitializer: extractJavaInitializer,
   scanConstructorBinding: scanJavaConstructorBinding,
-  forLoopNodeTypes: JAVA_FOR_LOOP_NODE_TYPES,
   extractForLoopBinding: extractJavaForLoopBinding,
   extractPendingAssignment: extractJavaPendingAssignment,
   extractPatternBinding: extractJavaPatternBinding,
-  patternBindingNodeTypes: new Set(['instanceof_expression']),
 };
 
 // ── Kotlin ────────────────────────────────────────────────────────────────

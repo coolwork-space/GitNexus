@@ -63,6 +63,11 @@ export interface LanguageTypeConfig {
   declarationNodeTypes: ReadonlySet<string>;
   /** AST node types for for-each/for-in statements with explicit element types. */
   forLoopNodeTypes?: ReadonlySet<string>;
+  /** Optional allowlist of AST node types on which extractPatternBinding should run.
+   *  When present, extractPatternBinding is only invoked for nodes whose type is in this set,
+   *  short-circuiting the call for all other node types. When absent, every node is passed to
+   *  extractPatternBinding (legacy behaviour). */
+  patternBindingNodeTypes?: ReadonlySet<string>;
   /** Extract a (varName → typeName) binding from a declaration node */
   extractDeclaration: TypeBindingExtractor;
   /** Extract a (varName → typeName) binding from a parameter node */
@@ -91,9 +96,4 @@ export interface LanguageTypeConfig {
    *  The extractor receives the current scope's resolved bindings (read-only) to look up the
    *  source variable's type. Returns undefined for non-matching nodes or unknown source types. */
   extractPatternBinding?: PatternBindingExtractor;
-  /** Optional allowlist of AST node types on which extractPatternBinding should run.
-   *  When present, extractPatternBinding is only invoked for nodes whose type is in this set,
-   *  short-circuiting the call for all other node types. When absent, every node is passed to
-   *  extractPatternBinding (legacy behaviour). */
-  patternBindingNodeTypes?: ReadonlySet<string>;
 }

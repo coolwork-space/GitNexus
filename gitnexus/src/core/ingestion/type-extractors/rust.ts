@@ -271,11 +271,11 @@ const extractPatternBinding: PatternBindingExtractor = (
 
 export const typeConfig: LanguageTypeConfig = {
   declarationNodeTypes: DECLARATION_NODE_TYPES,
+  patternBindingNodeTypes: new Set(['let_condition']),
   extractDeclaration,
   extractInitializer,
   extractParameter,
   scanConstructorBinding,
   extractPendingAssignment,
   extractPatternBinding,
-  patternBindingNodeTypes: new Set(['let_condition']),
 };
