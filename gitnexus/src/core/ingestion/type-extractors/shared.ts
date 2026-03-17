@@ -75,6 +75,18 @@ const CONTAINER_DESCRIPTORS: ReadonlyMap<string, ContainerDescriptor> = new Map(
   ['Iterator',  { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
   ['IEnumerable', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
   ['IList',     { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['ICollection', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['Collection',  { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['ObservableCollection', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['IEnumerator', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['SortedSet', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['Stream',    { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['MutableList', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['MutableSet',  { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['LinkedHashSet', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['ArrayDeque',  { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['PriorityQueue', { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
+  ['MutableMap', { arity: 2, keyMethods: STD_KEY_METHODS, valueMethods: STD_VALUE_METHODS }],
   ['list',      { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
   ['set',       { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
   ['tuple',     { arity: 1, keyMethods: NO_KEYS, valueMethods: SINGLE_ELEMENT_METHODS }],
@@ -136,8 +148,9 @@ export function resolveIterableElementType(
   findParamElementType?: (name: string, startNode: SyntaxNode, pos?: TypeArgPosition) => string | undefined,
   typeArgPos: TypeArgPosition = 'last',
 ): string | undefined {
-  // Strategy 1: declarationTypeNodes AST node
-  const typeNode = declarationTypeNodes.get(`${scope}\0${iterableName}`);
+  // Strategy 1: declarationTypeNodes AST node (check current scope, then file scope)
+  const typeNode = declarationTypeNodes.get(`${scope}\0${iterableName}`)
+    ?? (scope !== '' ? declarationTypeNodes.get(`\0${iterableName}`) : undefined);
   if (typeNode) {
     const t = extractFromTypeNode(typeNode, typeArgPos);
     if (t) return t;
@@ -274,7 +287,7 @@ export const extractSimpleTypeName = (typeNode: SyntaxNode, depth = 0): string |
 export const extractVarName = (node: SyntaxNode): string | undefined => {
   if (node.type === 'identifier' || node.type === 'simple_identifier'
     || node.type === 'variable_name' || node.type === 'name'
-    || node.type === 'constant') {
+    || node.type === 'constant' || node.type === 'property_identifier') {
     return node.text;
   }
   // variable_declarator (Java/C#): has a 'name' field

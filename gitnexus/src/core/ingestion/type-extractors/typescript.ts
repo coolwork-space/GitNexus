@@ -7,6 +7,7 @@ const DECLARATION_NODE_TYPES: ReadonlySet<string> = new Set([
   'variable_declaration',
   'function_declaration',   // JSDoc @param on function declarations
   'method_definition',      // JSDoc @param on class methods
+  'public_field_definition', // class field: private users: User[]
 ]);
 
 const normalizeJsDocType = (raw: string): string | undefined => {
@@ -77,6 +78,19 @@ const extractDeclaration: TypeBindingExtractor = (node: SyntaxNode, env: Map<str
     for (const [paramName, typeName] of jsDocParams) {
       if (!env.has(paramName)) env.set(paramName, typeName);
     }
+    return;
+  }
+
+  // Class field: `private users: User[]` — public_field_definition has name + type fields directly
+  // The name child is a property_identifier (not handled by extractVarName), so we read .text directly.
+  if (node.type === 'public_field_definition') {
+    const nameNode = node.childForFieldName('name');
+    const typeAnnotation = node.childForFieldName('type');
+    if (!nameNode || !typeAnnotation) return;
+    const varName = nameNode.text;
+    if (!varName) return;
+    const typeName = extractSimpleTypeName(typeAnnotation);
+    if (typeName) env.set(varName, typeName);
     return;
   }
 
@@ -350,11 +364,18 @@ const extractForLoopBinding: ForLoopExtractor = (
     if (prop) iterableName = prop.text;
   } else if (rightNode?.type === 'call_expression') {
     // entries.values() → call_expression > function: member_expression > object + property
+    // this.repos.values() → nested member_expression: extract property from inner member
     const fn = rightNode.childForFieldName('function');
     if (fn?.type === 'member_expression') {
       const obj = fn.childForFieldName('object');
       const prop = fn.childForFieldName('property');
-      if (obj?.type === 'identifier') iterableName = obj.text;
+      if (obj?.type === 'identifier') {
+        iterableName = obj.text;
+      } else if (obj?.type === 'member_expression') {
+        // this.repos.values() → obj = this.repos → extract 'repos'
+        const innerProp = obj.childForFieldName('property');
+        if (innerProp) iterableName = innerProp.text;
+      }
       if (prop?.type === 'property_identifier') methodName = prop.text;
     }
   }

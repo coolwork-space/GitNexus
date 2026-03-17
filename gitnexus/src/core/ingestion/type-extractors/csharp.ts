@@ -270,7 +270,7 @@ const extractPatternBinding: PatternBindingExtractor = (node) => {
   // is_pattern_expression: `obj is User user` — has a declaration_pattern child
   if (node.type === 'is_pattern_expression') {
     const pattern = node.childForFieldName('pattern');
-    if (pattern?.type !== 'declaration_pattern') return undefined;
+    if (pattern?.type !== 'declaration_pattern' && pattern?.type !== 'recursive_pattern') return undefined;
     const typeNode = pattern.childForFieldName('type');
     const nameNode = pattern.childForFieldName('name');
     if (!typeNode || !nameNode) return undefined;
@@ -279,9 +279,10 @@ const extractPatternBinding: PatternBindingExtractor = (node) => {
     if (!typeName || !varName) return undefined;
     return { varName, typeName };
   }
-  // declaration_pattern: standalone in switch statements and switch expressions
-  // `case User u:` or `User u =>` — the declaration_pattern is a direct child
-  if (node.type === 'declaration_pattern') {
+  // declaration_pattern / recursive_pattern: standalone in switch statements and switch expressions
+  // `case User u:` or `User u =>` or `User { Name: "Alice" } u =>`
+  // Both use the same 'type' and 'name' fields.
+  if (node.type === 'declaration_pattern' || node.type === 'recursive_pattern') {
     const typeNode = node.childForFieldName('type');
     const nameNode = node.childForFieldName('name');
     if (!typeNode || !nameNode) return undefined;
@@ -321,7 +322,7 @@ const extractPendingAssignment: PendingAssignmentExtractor = (node, scopeEnv) =>
 export const typeConfig: LanguageTypeConfig = {
   declarationNodeTypes: DECLARATION_NODE_TYPES,
   forLoopNodeTypes: FOR_LOOP_NODE_TYPES,
-  patternBindingNodeTypes: new Set(['is_pattern_expression', 'declaration_pattern']),
+  patternBindingNodeTypes: new Set(['is_pattern_expression', 'declaration_pattern', 'recursive_pattern']),
   extractDeclaration,
   extractParameter,
   scanConstructorBinding,

@@ -1586,3 +1586,56 @@ describe('TypeScript member access iterable for-loop', () => {
     expect(repoSave).toBeDefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// TypeScript class field foreach: for (const user of this.users) with class field User[]
+// ---------------------------------------------------------------------------
+
+describe('TypeScript class field foreach resolution (Phase 6.1)', () => {
+  let result: PipelineResult;
+
+  beforeAll(async () => {
+    result = await runPipelineFromRepo(
+      path.join(FIXTURES, 'ts-class-field-foreach'),
+      () => {},
+    );
+  }, 60000);
+
+  it('detects User and Repo classes with save methods', () => {
+    expect(getNodesByLabel(result, 'Class')).toContain('User');
+    expect(getNodesByLabel(result, 'Class')).toContain('Repo');
+    expect(getNodesByLabel(result, 'Method')).toContain('save');
+  });
+
+  it('resolves user.save() via class field User[] to User#save', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const userSave = calls.find(c =>
+      c.target === 'save' && c.source === 'processUsers' && c.targetFilePath?.includes('user'),
+    );
+    expect(userSave).toBeDefined();
+  });
+
+  it('does NOT cross-resolve user.save() to Repo#save', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const wrong = calls.find(c =>
+      c.target === 'save' && c.source === 'processUsers' && c.targetFilePath?.includes('repo'),
+    );
+    expect(wrong).toBeUndefined();
+  });
+
+  it('resolves repo.save() via class field Map<string, Repo>.values() to Repo#save', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const repoSave = calls.find(c =>
+      c.target === 'save' && c.source === 'processRepos' && c.targetFilePath?.includes('repo'),
+    );
+    expect(repoSave).toBeDefined();
+  });
+
+  it('does NOT cross-resolve repo.save() to User#save', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const wrong = calls.find(c =>
+      c.target === 'save' && c.source === 'processRepos' && c.targetFilePath?.includes('user'),
+    );
+    expect(wrong).toBeUndefined();
+  });
+});

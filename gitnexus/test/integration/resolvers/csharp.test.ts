@@ -1112,3 +1112,49 @@ describe('C# Dictionary .Values foreach resolution', () => {
     expect(wrongSave).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// C# recursive_pattern: obj is User { Name: "Alice" } u — Phase 6.1
+// ---------------------------------------------------------------------------
+
+describe('C# recursive_pattern type resolution', () => {
+  let result: PipelineResult;
+
+  beforeAll(async () => {
+    result = await runPipelineFromRepo(
+      path.join(FIXTURES, 'csharp-recursive-pattern'),
+      () => {},
+    );
+  }, 60000);
+
+  it('detects User and Repo classes with Save methods', () => {
+    expect(getNodesByLabel(result, 'Class')).toContain('User');
+    expect(getNodesByLabel(result, 'Class')).toContain('Repo');
+  });
+
+  it('resolves u.Save() via recursive_pattern is-expression to User#Save', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const userSave = calls.find(c =>
+      c.target === 'Save' && c.targetFilePath?.includes('User'),
+    );
+    expect(userSave).toBeDefined();
+  });
+
+  it('resolves r.Save() via recursive_pattern switch expression to Repo#Save', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const repoSave = calls.find(c =>
+      c.target === 'Save' && c.targetFilePath?.includes('Repo'),
+    );
+    expect(repoSave).toBeDefined();
+  });
+
+  it('resolves exactly one Save call per target class (no cross-resolution)', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const saveCalls = calls.filter(c => c.target === 'Save' && c.source === 'ProcessWithRecursivePattern');
+    const toUser = saveCalls.filter(c => c.targetFilePath?.includes('User'));
+    const toRepo = saveCalls.filter(c => c.targetFilePath?.includes('Repo'));
+    // u.Save() → User#Save only, r.Save() → Repo#Save only
+    expect(toUser.length).toBe(1);
+    expect(toRepo.length).toBe(1);
+  });
+});

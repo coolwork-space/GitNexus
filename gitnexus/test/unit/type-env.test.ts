@@ -3327,6 +3327,169 @@ class App {
     });
   });
 
+  describe('new container descriptors (Phase 6.1)', () => {
+    it('Collection<User> resolves element type via descriptor (arity 1)', () => {
+      const tree = parse(`
+using System.Collections.ObjectModel;
+public class App {
+    public void Process(Collection<User> users) {
+        foreach (var user in users) {
+            user.Save();
+        }
+    }
+}
+      `, CSharp);
+      const { env } = buildTypeEnv(tree, 'csharp');
+      expect(flatGet(env, 'user')).toBe('User');
+    });
+
+    it('MutableMap<String, User>.values() resolves to User via descriptor (arity 2)', () => {
+      const tree = parse(`
+fun process(data: MutableMap<String, User>) {
+    for (user in data.values()) {
+        user.save()
+    }
+}
+      `, Kotlin);
+      const { env } = buildTypeEnv(tree, 'kotlin');
+      expect(flatGet(env, 'user')).toBe('User');
+    });
+
+    it('MutableList<User> resolves element type via descriptor', () => {
+      const tree = parse(`
+fun process(users: MutableList<User>) {
+    for (user in users) {
+        user.save()
+    }
+}
+      `, Kotlin);
+      const { env } = buildTypeEnv(tree, 'kotlin');
+      expect(flatGet(env, 'user')).toBe('User');
+    });
+
+    it('SortedSet<User> resolves element type via descriptor (C#)', () => {
+      const tree = parse(`
+using System.Collections.Generic;
+public class App {
+    public void Process(SortedSet<User> users) {
+        foreach (var user in users) {
+            user.Save();
+        }
+    }
+}
+      `, CSharp);
+      const { env } = buildTypeEnv(tree, 'csharp');
+      expect(flatGet(env, 'user')).toBe('User');
+    });
+
+    it('Stream<User> resolves element type via descriptor (Java)', () => {
+      const tree = parse(`
+class App {
+    void process(Stream<User> users) {
+        for (User user : users.toList()) {
+            user.save();
+        }
+    }
+}
+      `, Java);
+      const { env } = buildTypeEnv(tree, 'java');
+      expect(flatGet(env, 'user')).toBe('User');
+    });
+  });
+
+  describe('C# recursive_pattern binding (Phase 6.1)', () => {
+    it('obj is User { Name: "Alice" } u — binds u to User', () => {
+      const tree = parse(`
+public class App {
+    public void Process(object obj) {
+        if (obj is User { Name: "Alice" } u) {
+            u.Save();
+        }
+    }
+}
+      `, CSharp);
+      const { env } = buildTypeEnv(tree, 'csharp');
+      expect(flatGet(env, 'u')).toBe('User');
+    });
+
+    it('switch expression with recursive_pattern — binds r to Repo', () => {
+      const tree = parse(`
+public class App {
+    public void Process(object obj) {
+        var result = obj switch {
+            Repo { Name: "main" } r => r.Save(),
+            _ => false
+        };
+    }
+}
+      `, CSharp);
+      const { env } = buildTypeEnv(tree, 'csharp');
+      expect(flatGet(env, 'r')).toBe('Repo');
+    });
+
+    it('recursive_pattern without designation — no pattern binding produced', () => {
+      const tree = parse(`
+public class App {
+    public void Process(object obj) {
+        if (obj is User { Name: "Alice" }) {
+        }
+    }
+}
+      `, CSharp);
+      const { env } = buildTypeEnv(tree, 'csharp');
+      // obj → object from the parameter, but no pattern binding
+      expect(flatGet(env, 'obj')).toBe('object');
+      expect(flatSize(env)).toBe(1); // only the parameter binding
+    });
+  });
+
+  describe('C# await foreach (Phase 6.1)', () => {
+    it('await foreach (var user in users) — same node type as foreach, resolves element type', () => {
+      const tree = parse(`
+using System.Collections.Generic;
+public class App {
+    public async Task Process(IAsyncEnumerable<User> users) {
+        await foreach (var user in users) {
+            user.Save();
+        }
+    }
+}
+      `, CSharp);
+      const { env } = buildTypeEnv(tree, 'csharp');
+      expect(flatGet(env, 'user')).toBe('User');
+    });
+  });
+
+  describe('TypeScript class field declaration (Phase 6.1)', () => {
+    it('class field with array type — for-loop resolves element type via declarationTypeNodes', () => {
+      const tree = parse(`
+class UserService {
+    private users: User[] = [];
+    processUsers() {
+        for (const user of this.users) {
+            user.save();
+        }
+    }
+}
+      `, TypeScript.typescript);
+      const { env } = buildTypeEnv(tree, 'typescript');
+      // User[] is an array_type — extractSimpleTypeName returns undefined (no simple base name).
+      // But declarationTypeNodes captures the raw AST node, so for-loop resolution
+      // uses Strategy 1 (extractTsElementTypeFromAnnotation) to resolve the element type.
+      expect(flatGet(env, 'user')).toBe('User');
+    });
+
+    it('class field with generic type annotation — binds field name to base type', () => {
+      const tree = parse(`
+class RepoService {
+    repos: Map<string, Repo> = new Map();
+}
+      `, TypeScript.typescript);
+      const { env } = buildTypeEnv(tree, 'typescript');
+      expect(flatGet(env, 'repos')).toBe('Map');
+    });
+  });
+
   describe('match arm scoping — first-writer-wins regression', () => {
     it('Rust: first match arm binding wins, later arms do not overwrite', () => {
       const tree = parse(`
